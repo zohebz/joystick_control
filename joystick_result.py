@@ -17,6 +17,10 @@ force_radius_m = 0.09
 moment_of_inertia = (1/3)*joystick_weight_kg*force_radius_m*force_radius_m
 
 value_unit_dict = {'time': 'time (s)',
+                    'joystick_pos' : 'joystick position',
+                    'start_point' : 'start point',
+                    'end_point' : 'end point',
+                    'mode' : 'MODE',
                     'velocity': 'velocity (m/s)',
                     'velocity_X': 'velocity_X (m/s)',
                     'velocity_Y': 'velocity_Y (m/s)',
@@ -41,7 +45,6 @@ except:
 with open('observation.csv') as f:
     reader = csv.DictReader(f)
     calculate_row_list = []
-    print(type(reader))
     for row in reader:
         converted_dict = {'time': ast.literal_eval(row['time']), 'joystick_pos': ast.literal_eval(row['joystick_pos']), 'start_point': ast.literal_eval(row['start_point']), 'end_point': ast.literal_eval(row['end_point']), 'mode': row['mode']}
         calculate_row_list.append(converted_dict)
