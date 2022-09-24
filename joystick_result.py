@@ -94,8 +94,10 @@ with open('observation.csv') as f:
         i=i+1
 f.close()
 calculate_row_csv_list = []
+start_time = calculate_row_list[0]['time']
 i=0
 while i<len(calculate_row_list):
+    calculate_row_list[i]['time'] = calculate_row_list[i]['time'] - start_time
     calculate_row_csv_list.append(dict([(value_unit_dict.get(key), value) for key, value in calculate_row_list[i].items()]))
     i=i+1
 save_folder_name = input('enter save folder name: ')
