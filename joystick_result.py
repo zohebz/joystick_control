@@ -43,22 +43,26 @@ with open('observation.csv') as f:
     calculate_row_list = []
     print(type(reader))
     for row in reader:
-        converted_dict = {value_unit_dict['time']: ast.literal_eval(row['time']), 'joystick_pos': ast.literal_eval(row['joystick_pos']), 'start_point': ast.literal_eval(row['start_point']), 'end_point': ast.literal_eval(row['end_point']), 'mode': row['mode']}
+        converted_dict = {'time': ast.literal_eval(row['time']), 'joystick_pos': ast.literal_eval(row['joystick_pos']), 'start_point': ast.literal_eval(row['start_point']), 'end_point': ast.literal_eval(row['end_point']), 'mode': row['mode']}
         calculate_row_list.append(converted_dict)
     print('csv length: '+str(len(calculate_row_list)))
     i=0
     while i<len(calculate_row_list):
-        time_diff = calculate_row_list[i+1][value_unit_dict['time']]- calculate_row_list[i][value_unit_dict['time']]
-        if value_unit_dict['velocity'] not in calculate_row_list[i] and i!=len(calculate_row_list)-1:
+        if 'velocity' not in calculate_row_list[i] and i!=len(calculate_row_list)-1:
+            time_diff = calculate_row_list[i+1]['time']- calculate_row_list[i]['time']
             distance = math.hypot(((calculate_row_list[i+1]['joystick_pos'][0]-calculate_row_list[i]['joystick_pos'][0])*(x_range_max_degrees/(x_range)))*force_radius_m,((calculate_row_list[i+1]['joystick_pos'][1]-calculate_row_list[i]['joystick_pos'][1])*(x_range_max_degrees/(x_range)))*force_radius_m) 
-            calculate_row_list[i][value_unit_dict['velocity_X']] = (((calculate_row_list[i+1]['joystick_pos'][0]-calculate_row_list[i]['joystick_pos'][0])*(x_range_max_degrees/(x_range)))*force_radius_m)/time_diff 
-            calculate_row_list[i][value_unit_dict['velocity_y']] = (((calculate_row_list[i+1]['joystick_pos'][1]-calculate_row_list[i]['joystick_pos'][1])*(x_range_max_degrees/(x_range)))*force_radius_m)/time_diff 
+            calculate_row_list[i]['velocity_X'] = (((calculate_row_list[i+1]['joystick_pos'][0]-calculate_row_list[i]['joystick_pos'][0])*(x_range_max_degrees/(x_range)))*force_radius_m)/time_diff 
+            calculate_row_list[i]['velocity_Y'] = (((calculate_row_list[i+1]['joystick_pos'][1]-calculate_row_list[i]['joystick_pos'][1])*(x_range_max_degrees/(x_range)))*force_radius_m)/time_diff 
             calculate_row_list[i]['velocity'] = distance/time_diff
-        elif value_unit_dict['velocity'] not in calculate_row_list[i] and i==len(calculate_row_list)-1:
+        elif 'velocity' not in calculate_row_list[i] and i==len(calculate_row_list)-1:
             calculate_row_list[i]['velocity_X'] = 0 
-            calculate_row_list[i]['velocity_y'] = 0
+            calculate_row_list[i]['velocity_Y'] = 0
             calculate_row_list[i]['velocity'] = 0
+        i=i+1
+    i=0
+    while i<len(calculate_row_list):
         if 'acceleration' not in calculate_row_list[i] and i!=len(calculate_row_list)-1:
+            time_diff = calculate_row_list[i+1]['time']- calculate_row_list[i]['time']
             velocity_diff = math.hypot(calculate_row_list[i+1]['velocity_X']-calculate_row_list[i]['velocity_X'],calculate_row_list[i+1]['velocity_Y']-calculate_row_list[i]['velocity_Y'])
             calculate_row_list[i]['acceleration_X'] = (calculate_row_list[i+1]['velocity_X']-calculate_row_list[i]['velocity_X'])/time_diff
             calculate_row_list[i]['acceleration_Y'] = (calculate_row_list[i+1]['velocity_Y']-calculate_row_list[i]['velocity_Y'])/time_diff
@@ -67,7 +71,11 @@ with open('observation.csv') as f:
             calculate_row_list[i]['acceleration_X'] = 0 
             calculate_row_list[i]['acceleration_Y'] = 0
             calculate_row_list[i]['acceleration'] = 0
+        i=i+1
+    i=0
+    while i<len(calculate_row_list):
         if 'force' not in calculate_row_list[i] and i!=len(calculate_row_list)-1:
+            time_diff = calculate_row_list[i+1]['time']- calculate_row_list[i]['time']
             calculate_row_list[i]['force_X'] = ((calculate_row_list[i]['acceleration_X']/force_radius_m)*moment_of_inertia)/force_radius_m 
             calculate_row_list[i]['force_Y'] = ((calculate_row_list[i]['acceleration_X']/force_radius_m)*moment_of_inertia)/force_radius_m 
             calculate_row_list[i]['force'] =  ((calculate_row_list[i]['acceleration']/force_radius_m)*moment_of_inertia)/force_radius_m 
@@ -85,15 +93,20 @@ with open('observation.csv') as f:
             end_point_split_dict[str(calculate_row_list[i]['end_point'])].append(calculate_row_list[i])
         i=i+1
 f.close()
+calculate_row_csv_list = []
+i=0
+while i<len(calculate_row_list):
+    calculate_row_csv_list.append(dict([(value_unit_dict.get(key), value) for key, value in calculate_row_list[i].items()]))
+    i=i+1
 save_folder_name = input('enter save folder name: ')
 parent_folder = os.path.join('results', save_folder_name)
 parent_folder_exists = os.path.exists(parent_folder)
 if not parent_folder_exists:
     os.mkdir(parent_folder)
 with open(os.path.join(parent_folder,'result_values.csv'), 'w', encoding='utf8', newline='') as output_file:
-    fc = csv.DictWriter(output_file,fieldnames=calculate_row_list[0].keys())
+    fc = csv.DictWriter(output_file,fieldnames=calculate_row_csv_list[0].keys())
     fc.writeheader()
-    fc.writerows(calculate_row_list)
+    fc.writerows(calculate_row_csv_list)
 output_file.close()
 try:
     moving_point_color = (0,255,0)
