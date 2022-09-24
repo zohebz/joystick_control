@@ -10,6 +10,24 @@ import traceback
 
 #create folder "results" in same directory
 
+x_range_max_degrees = 30
+y_range_max_degrees = 35
+joystick_weight_kg = 0.2
+force_radius_m = 0.09
+moment_of_inertia = (1/3)*joystick_weight_kg*force_radius_m*force_radius_m
+
+value_unit_dict = {'time': 'time (s)',
+                    'velocity': 'velocity (m/s)',
+                    'velocity_X': 'velocity_X (m/s)',
+                    'velocity_Y': 'velocity_Y (m/s)',
+                    'acceleration': 'acceleration (m/(s^2))',
+                    'acceleration_X': 'acceleration_X (m/(s^2))',
+                    'acceleration_X': 'acceleration_X (m/(s^2))',
+                    'force' : 'force (N)',
+                    'force_X' : 'force_X (N)',
+                    'force_Y' : 'force_Y (N)', 
+                    }
+
 try:
     f=open("calibration_data.txt", "r")
     lines = f.readlines()
@@ -25,26 +43,38 @@ with open('observation.csv') as f:
     calculate_row_list = []
     print(type(reader))
     for row in reader:
-        converted_dict = {'time': ast.literal_eval(row['time']), 'joystick_pos': ast.literal_eval(row['joystick_pos']), 'start_point': ast.literal_eval(row['start_point']), 'end_point': ast.literal_eval(row['end_point']), 'mode': row['mode']}
+        converted_dict = {value_unit_dict['time']: ast.literal_eval(row['time']), 'joystick_pos': ast.literal_eval(row['joystick_pos']), 'start_point': ast.literal_eval(row['start_point']), 'end_point': ast.literal_eval(row['end_point']), 'mode': row['mode']}
         calculate_row_list.append(converted_dict)
     print('csv length: '+str(len(calculate_row_list)))
     i=0
     while i<len(calculate_row_list):
-        if 'velocity' not in calculate_row_list[i] and i!=len(calculate_row_list)-1:
-            time_diff = calculate_row_list[i+1]['time']- calculate_row_list[i]['time']
-            distance = math.dist(calculate_row_list[i+1]['joystick_pos'],calculate_row_list[i]['joystick_pos'])
+        time_diff = calculate_row_list[i+1][value_unit_dict['time']]- calculate_row_list[i][value_unit_dict['time']]
+        if value_unit_dict['velocity'] not in calculate_row_list[i] and i!=len(calculate_row_list)-1:
+            distance = math.hypot(((calculate_row_list[i+1]['joystick_pos'][0]-calculate_row_list[i]['joystick_pos'][0])*(x_range_max_degrees/(x_range)))*force_radius_m,((calculate_row_list[i+1]['joystick_pos'][1]-calculate_row_list[i]['joystick_pos'][1])*(x_range_max_degrees/(x_range)))*force_radius_m) 
+            calculate_row_list[i][value_unit_dict['velocity_X']] = (((calculate_row_list[i+1]['joystick_pos'][0]-calculate_row_list[i]['joystick_pos'][0])*(x_range_max_degrees/(x_range)))*force_radius_m)/time_diff 
+            calculate_row_list[i][value_unit_dict['velocity_y']] = (((calculate_row_list[i+1]['joystick_pos'][1]-calculate_row_list[i]['joystick_pos'][1])*(x_range_max_degrees/(x_range)))*force_radius_m)/time_diff 
             calculate_row_list[i]['velocity'] = distance/time_diff
-        elif 'velocity' not in calculate_row_list[i] and i==len(calculate_row_list)-1:
+        elif value_unit_dict['velocity'] not in calculate_row_list[i] and i==len(calculate_row_list)-1:
+            calculate_row_list[i]['velocity_X'] = 0 
+            calculate_row_list[i]['velocity_y'] = 0
             calculate_row_list[i]['velocity'] = 0
-        i=i+1
-    i=0
-    while i<len(calculate_row_list):
         if 'acceleration' not in calculate_row_list[i] and i!=len(calculate_row_list)-1:
-            time_diff = calculate_row_list[i+1]['time']- calculate_row_list[i]['time']
-            velocity_diff = calculate_row_list[i+1]['velocity'] - calculate_row_list[i]['velocity']
+            velocity_diff = math.hypot(calculate_row_list[i+1]['velocity_X']-calculate_row_list[i]['velocity_X'],calculate_row_list[i+1]['velocity_Y']-calculate_row_list[i]['velocity_Y'])
+            calculate_row_list[i]['acceleration_X'] = (calculate_row_list[i+1]['velocity_X']-calculate_row_list[i]['velocity_X'])/time_diff
+            calculate_row_list[i]['acceleration_Y'] = (calculate_row_list[i+1]['velocity_Y']-calculate_row_list[i]['velocity_Y'])/time_diff
             calculate_row_list[i]['acceleration'] = velocity_diff/time_diff
         elif 'acceleration' not in calculate_row_list[i] and i==len(calculate_row_list)-1:
+            calculate_row_list[i]['acceleration_X'] = 0 
+            calculate_row_list[i]['acceleration_Y'] = 0
             calculate_row_list[i]['acceleration'] = 0
+        if 'force' not in calculate_row_list[i] and i!=len(calculate_row_list)-1:
+            calculate_row_list[i]['force_X'] = ((calculate_row_list[i]['acceleration_X']/force_radius_m)*moment_of_inertia)/force_radius_m 
+            calculate_row_list[i]['force_Y'] = ((calculate_row_list[i]['acceleration_X']/force_radius_m)*moment_of_inertia)/force_radius_m 
+            calculate_row_list[i]['force'] =  ((calculate_row_list[i]['acceleration']/force_radius_m)*moment_of_inertia)/force_radius_m 
+        elif 'force' not in calculate_row_list[i] and i==len(calculate_row_list)-1:
+            calculate_row_list[i]['force_X'] = 0 
+            calculate_row_list[i]['force_Y'] = 0
+            calculate_row_list[i]['force'] = 0
         i=i+1
     end_point_split_dict = {}
     i=0
