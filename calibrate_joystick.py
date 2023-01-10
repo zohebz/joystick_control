@@ -1,6 +1,7 @@
 #! /usr/bin/python
 import serial           # import using pip
 import time
+import random
 
 arduino = serial.Serial('COM7', 9600, timeout=0.1)
 
@@ -8,6 +9,12 @@ def check_reset(data):
     if 'reset' in data:
         return True
     return False
+
+def generate_random_point(calibrated_max_min):
+    random_points = []
+    random_points.append(random.randint(calibrated_max_min["x_min"]+10,calibrated_max_min["x_max"]-10))
+    random_points.append(random.randint(calibrated_max_min["y_min"]+10,calibrated_max_min["y_max"]-10))
+    return random_points
 
 def get_coordinates(data):
     coordinates = [None,None]
@@ -57,4 +64,11 @@ while True:
 f=open("calibration_data.txt", "w")
 f.write(str(calibrated_max_min))
 f.close()
-print("clibration complete!!!!")
+print("clibration complete!")
+random_points = []
+for x in range(0,100):
+    random_points.append(generate_random_point(calibrated_max_min))
+f=open("random_points.txt", "w")
+f.write(str(random_points))
+f.close()
+print("created random points list!")
